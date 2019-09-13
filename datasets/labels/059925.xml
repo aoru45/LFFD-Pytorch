@@ -1,0 +1,26 @@
+<annotation>
+	<folder>images</folder>
+	<filename>059925.jpg</filename>
+	<path>/media/xueaoru/其他/ML/my-SSD/dataset/images/059925.jpg</path>
+	<source>
+		<database>Unknown</database>
+	</source>
+	<size>
+		<width>512</width>
+		<height>512</height>
+		<depth>3</depth>
+	</size>
+	<segmented>0</segmented>
+	<object>
+		<name>basketball</name>
+		<pose>Unspecified</pose>
+		<truncated>0</truncated>
+		<difficult>0</difficult>
+		<bndbox>
+			<xmin>416</xmin>
+			<ymin>425</ymin>
+			<xmax>477</xmax>
+			<ymax>482</ymax>
+		</bndbox>
+	</object>
+</annotation>
