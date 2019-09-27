@@ -4,7 +4,7 @@
 @Author: Aoru Xue
 @Date: 2019-09-02 01:32:25
 @LastEditors: Aoru Xue
-@LastEditTime: 2019-09-10 19:55:04
+@LastEditTime: 2019-09-28 01:22:23
 '''
 import torch
 import math
@@ -48,24 +48,49 @@ def iou_of(boxes0, boxes1, eps=1e-5):
     area1 = area_of(boxes1[..., :2], boxes1[..., 2:])
     return overlap_area / (area0 + area1 - overlap_area + eps)
 
-
-def assign_priors(gt_boxes, gt_labels, corner_form_priors,
+def in_center(priors,gt):
+    # 1,n,4    m,1,4
+    s1 = (priors[...,0] > gt[...,0]) & (priors[...,1] > gt[...,1]) & (priors[...,0] < gt[...,2]) & (priors[...,1] > gt[...,3]) 
+    return s1
+def assign_priors(gt_boxes, gt_labels, center_form_priors,
                   iou_threshold):
+    
     #print(gt_boxes,corner_form_priors)
     # size: num_priors x num_targets
-    ious = iou_of(gt_boxes.unsqueeze(0), corner_form_priors.unsqueeze(1))
-    # size: num_priors
-    best_target_per_prior, best_target_per_prior_index = ious.max(1)
-    # size: num_targets
-    best_prior_per_target, best_prior_per_target_index = ious.max(0)
+    s1 = in_center(center_form_priors.unsqueeze(1),gt_boxes.unsqueeze(0)) # 直接匹配在中间的
 
-    for target_index, prior_index in enumerate(best_prior_per_target_index):
-        best_target_per_prior_index[prior_index] = target_index
-    best_target_per_prior.index_fill_(0, best_prior_per_target_index, 2)
-    # size: num_priors
+    s1[torch.sum(s1,dim = 1) > 1] = False # 同时有多个匹配的
+    best_target_per_prior, best_target_per_prior_index = s1.max(1)
+    
+    
     labels = gt_labels[best_target_per_prior_index]
-    labels[best_target_per_prior < iou_threshold] = 0  # the backgournd id
+    labels[best_target_per_prior == False] = 0  # the backgournd id
+    
     boxes = gt_boxes[best_target_per_prior_index]
+    t = 0 
+    center_form_gt_boxes = corner_form_to_center_form(boxes)
+    for f,scale in zip([127,127,63,63,31,15,15,15],[(10,15),(15,20),(20,40),(40,70),(70,110),(110,250),(250,400),(400,560)]):
+        s2 = (center_form_gt_boxes[t:t+f*f,2] > scale[0]/512. * 0.9) & \
+        (center_form_gt_boxes[t:t+f*f,2] < scale[0]/512.) & \
+        (center_form_gt_boxes[t:t+f*f,2] > scale[1]/512.) & \
+        (center_form_gt_boxes[t:t+f*f,2] < scale[1]/512. * 1.1) 
+        
+        labels[t:t+f*f][s2==True] = 0 # 在gray scale内
+        t += f*f
+    
+    
+    # # size: num_priors
+    # best_target_per_prior, best_target_per_prior_index = ious.max(1)
+    # # size: num_targets
+    # best_prior_per_target, best_prior_per_target_index = ious.max(0)
+
+    # for target_index, prior_index in enumerate(best_prior_per_target_index):
+    #     best_target_per_prior_index[prior_index] = target_index
+    # best_target_per_prior.index_fill_(0, best_prior_per_target_index, 2)
+    # # size: num_priors
+    # labels = gt_labels[best_target_per_prior_index]
+    # labels[best_target_per_prior < iou_threshold] = 0  # the backgournd id
+    # boxes = gt_boxes[best_target_per_prior_index]
     return boxes, labels
 
 
