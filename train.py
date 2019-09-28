@@ -4,7 +4,7 @@
 @Author: Aoru Xue
 @Date: 2019-09-10 13:56:50
 @LastEditors: Aoru Xue
-@LastEditTime: 2019-09-28 17:09:29
+@LastEditTime: 2019-09-28 17:13:49
 '''
 import torch
 from torch.utils.data import DataLoader
@@ -32,8 +32,9 @@ if __name__ == '__main__':
     
     net = BasketNet(num_classes = 3)
     net.cuda()
-    net.load_state_dict(torch.load("./ckpt/1682.pth"))
-    optimizer = optim.SGD(net.parameters(), lr=1e-3,momentum=0.9,weight_decay=0.)
+    #net.load_state_dict(torch.load("./ckpt/1682.pth"))
+    optimizer = optim.Adam(net.parameters(),lr = 1e-3)    
+    #optimizer = optim.SGD(net.parameters(), lr=1e-3,momentum=0.9,weight_decay=0.)
     #scheduler = optim.lr_scheduler.StepLR(optimizer,100,0.1)
     loss_fn = BasketLoss()
     num_batches = len(dataloader)
