@@ -4,7 +4,7 @@
 @Author: Aoru Xue
 @Date: 2019-09-02 21:08:56
 @LastEditors: Aoru Xue
-@LastEditTime: 2019-09-13 21:28:17
+@LastEditTime: 2019-09-28 16:52:20
 '''
 import torch
 import torchvision
@@ -38,20 +38,20 @@ def pic_test():
     height, width, _ = image.shape
     img = transform(img)
     img = img.unsqueeze(0)
-    img = img.cuda()
+    #img = img.cuda()
     net = BasketNet()
     
-    net.load_state_dict(torch.load("./ckpt/61.pth"))
-    net.cuda()
+    net.load_state_dict(torch.load("./ckpt/2071.pth"))
+    #net.cuda()
     net.eval()
     with torch.no_grad():
         pred_confidence,pred_bbox = net(img)
-        #print(pred_confidence)
+        
         output = post_process(pred_confidence,pred_bbox, width=width, height=height)[0]
         
         boxes, labels, scores = [o.to("cpu").numpy() for o in output]
-        print(scores)
-        boxes = center_form_to_corner_form(boxes)
+        print(len(boxes))
+        
         drawn_image = draw_bounding_boxes(image, boxes, labels, scores, ("__background__","basketball","volleyball")).astype(np.uint8)
         
         Image.fromarray(drawn_image).save("./a.jpg")
@@ -61,7 +61,7 @@ def cap_test():
     cap = cv.VideoCapture(0)
     net = BasketNet()
     
-    net.load_state_dict(torch.load("./ckpt/61.pth",map_location='cpu'))
+    net.load_state_dict(torch.load("./ckpt/66.pth",map_location='cpu'))
     net.cpu()
     net.eval()
     while True:
@@ -92,4 +92,4 @@ def cap_test():
     cv.destroyAllWindows()
     cap.release()
 if __name__ == "__main__":
-    cap_test()
+    pic_test()

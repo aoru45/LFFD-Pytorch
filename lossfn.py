@@ -4,7 +4,7 @@
 @Author: Aoru Xue
 @Date: 2019-09-10 00:03:42
 @LastEditors: Aoru Xue
-@LastEditTime: 2019-09-13 21:02:33
+@LastEditTime: 2019-09-28 16:34:11
 '''
 import torch
 import torch.nn as nn
@@ -15,7 +15,7 @@ import basket_utils
 class BasketLoss(nn.Module):
     def __init__(self):
         super(BasketLoss, self).__init__()
-        self.neg_pos_ratio = 3
+        self.neg_pos_ratio = 10
     def forward(self,scores, predicted_locations, labels, gt_locations):
         num_classes = scores.size(2)
         with torch.no_grad():
@@ -28,9 +28,10 @@ class BasketLoss(nn.Module):
         pos_mask = labels > 0
         predicted_locations = predicted_locations[pos_mask, :].view(-1, 4)
         gt_locations = gt_locations[pos_mask, :].view(-1, 4)
-        smooth_l1_loss = F.smooth_l1_loss(predicted_locations, gt_locations, reduction='sum')
+        mse_loss = F.mse_loss(predicted_locations, gt_locations, reduction='sum')
+        #smooth_l1_loss = F.smooth_l1_loss(predicted_locations, gt_locations, reduction='sum')
         num_pos = gt_locations.size(0)
-        return smooth_l1_loss / num_pos, classification_loss / num_pos
+        return mse_loss / num_pos, classification_loss / num_pos
 
 if __name__ == "__main__":
     loss_fn = BasketLoss()

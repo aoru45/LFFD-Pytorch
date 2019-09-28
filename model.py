@@ -4,7 +4,7 @@
 @Author: Aoru Xue
 @Date: 2019-09-09 23:13:46
 @LastEditors: Aoru Xue
-@LastEditTime: 2019-09-13 21:30:30
+@LastEditTime: 2019-09-28 16:24:56
 '''
 import torch
 import torch.nn as nn
@@ -141,11 +141,11 @@ class BasketNet(nn.Module):
         #confidences = F.softmax(confidences, dim=2)
         if not self.training:
             if self.priors is None:
-                self.priors = Priors()()
+                self.priors = Priors()() # center form
                 #self.priors = self.priors.cuda()
             boxes = convert_locations_to_boxes(
-                loc, self.priors, 0.1, 0.2
-            )
+                loc, self.priors, 2
+            )# corner_form
             cls = F.softmax(cls, dim=2)
             return cls, boxes
         else:

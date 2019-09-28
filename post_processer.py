@@ -1,3 +1,11 @@
+'''
+@Descripttion: This is Aoru Xue's demo,which is only for reference
+@version: 
+@Author: Aoru Xue
+@Date: 2019-09-13 21:06:46
+@LastEditors: Aoru Xue
+@LastEditTime: 2019-09-28 16:52:04
+'''
 import torch
 
 from nms import boxes_nms
@@ -5,8 +13,8 @@ from nms import boxes_nms
 
 class PostProcessor:
     def __init__(self,
-                 iou_threshold = 0.5,
-                 score_threshold = 0.3,
+                 iou_threshold = 0.3,
+                 score_threshold = 0.8,
                  image_size = 512,
                  max_per_class=200,
                  max_per_image=-1):
@@ -44,12 +52,13 @@ class PostProcessor:
                 probs = probs[mask]
                 if probs.size(0) == 0:
                     continue
-                boxes = decoded_boxes[mask, :]
+                boxes = decoded_boxes[mask, :] # center_x,center_y,w,h
+                
                 boxes[:, 0] *= width
                 boxes[:, 2] *= width
                 boxes[:, 1] *= height
                 boxes[:, 3] *= height
-
+                
                 keep = boxes_nms(boxes, probs, self.iou_threshold, self.max_per_class)
 
                 boxes = boxes[keep, :]

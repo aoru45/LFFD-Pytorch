@@ -1,3 +1,11 @@
+'''
+@Descripttion: This is Aoru Xue's demo,which is only for reference
+@version: 
+@Author: Aoru Xue
+@Date: 2019-09-13 21:06:56
+@LastEditors: Aoru Xue
+@LastEditTime: 2019-09-28 16:53:58
+'''
 import numpy as np
 from six.moves import range
 import PIL.Image as Image
@@ -48,7 +56,7 @@ def _draw_single_box(image, xmin, ymin, xmax, ymax, color='black', display_str=N
         text_width, text_height = font.getsize(display_str)
         margin = np.ceil(0.05 * text_height)
         draw.rectangle(
-            [(left, text_bottom - text_height - 2 * margin), (left + text_width, text_bottom)], fill=color)
+           [(left, text_bottom - text_height - 2 * margin), (left + text_width, text_bottom)], fill=color)
         draw.text((left + margin, text_bottom - text_height - margin),
                   display_str,
                   fill='black',

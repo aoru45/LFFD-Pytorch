@@ -4,7 +4,7 @@
 @Author: Aoru Xue
 @Date: 2019-09-10 13:56:50
 @LastEditors: Aoru Xue
-@LastEditTime: 2019-09-13 21:12:52
+@LastEditTime: 2019-09-28 17:09:29
 '''
 import torch
 from torch.utils.data import DataLoader
@@ -15,28 +15,29 @@ from torchvision import transforms
 from dataset import BasketDataset
 from lossfn import BasketLoss
 from tqdm import tqdm
+from augmentor import BasketAug
 def train():
     pass
 
 
 if __name__ == '__main__':
-    
-    transform = transforms.Compose([
-        transforms.Resize(512),
-        transforms.ToTensor(),
-        transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
-    ])
+    transform = BasketAug()
+    #transform = transforms.Compose([
+    #    transforms.Resize(512),
+    #    transforms.ToTensor(),
+    #    transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
+    #])
     dataset = BasketDataset("./datasets",transform = transform)
     dataloader = DataLoader(dataset,batch_size = 8,shuffle =  True,num_workers = 4)
     
     net = BasketNet(num_classes = 3)
     net.cuda()
-    #net.load_state_dict(torch.load("./ckpt/111.pth"))
-    optimizer = optim.Adam(net.parameters(), lr=1e-3)
+    net.load_state_dict(torch.load("./ckpt/1682.pth"))
+    optimizer = optim.SGD(net.parameters(), lr=1e-3,momentum=0.9,weight_decay=0.)
     #scheduler = optim.lr_scheduler.StepLR(optimizer,100,0.1)
     loss_fn = BasketLoss()
     num_batches = len(dataloader)
-    min_loss = 99999.
+    min_loss = float("inf")
     for epoch in range(1000):
         epoch_loss_cls = 0.
         epoch_loss_reg = 0.
