@@ -47,7 +47,7 @@ def iou_of(boxes0, boxes1, eps=1e-5):
 
 def in_center(priors,gt):
     # 1,n,4    m,1,4
-    s1 = (priors[...,0] > gt[...,0]) & (priors[...,1] > gt[...,1]) & (priors[...,0] < gt[...,2]) & (priors[...,1] > gt[...,3]) 
+    s1 = (priors[...,0] > gt[...,0]) & (priors[...,1] > gt[...,1]) & (priors[...,0] < gt[...,2]) & (priors[...,1] < gt[...,3]) 
     return s1
 def assign_priors(gt_boxes, gt_labels, center_form_priors,
                   iou_threshold):
