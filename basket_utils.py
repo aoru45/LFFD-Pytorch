@@ -4,7 +4,7 @@
 @Author: Aoru Xue
 @Date: 2019-09-02 01:32:25
 @LastEditors: Aoru Xue
-@LastEditTime: 2019-09-28 16:45:16
+@LastEditTime: 2019-10-01 10:36:00
 '''
 import torch
 import math
@@ -67,12 +67,23 @@ def assign_priors(gt_boxes, gt_labels, center_form_priors,
     t = 0 
     center_form_gt_boxes = corner_form_to_center_form(boxes)
     for f,scale in zip([127,127,63,63,31,15,15,15],[(10,15),(15,20),(20,40),(40,70),(70,110),(110,250),(250,400),(400,560)]):
-        s2 = (center_form_gt_boxes[t:t+f*f,2] > scale[0]/512. * 0.9) & \
-        (center_form_gt_boxes[t:t+f*f,2] < scale[0]/512.) & \
-        (center_form_gt_boxes[t:t+f*f,2] > scale[1]/512.) & \
-        (center_form_gt_boxes[t:t+f*f,2] < scale[1]/512. * 1.1) 
+        # s2 = (center_form_gt_boxes[t:t+f*f,2] > scale[0]/512. * 0.9) & \
+        # (center_form_gt_boxes[t:t+f*f,2] < scale[0]/512.) & \
+        # (center_form_gt_boxes[t:t+f*f,2] > scale[1]/512.) & \
+        # (center_form_gt_boxes[t:t+f*f,2] < scale[1]/512. * 1.1)
         
-        labels[t:t+f*f][s2==True] = 0 # 在gray scale内
+        # s3 = (center_form_gt_boxes[t:t+f*f,3] > scale[0]/512. * 0.9) & \
+        # (center_form_gt_boxes[t:t+f*f,3] < scale[0]/512.) & \
+        # (center_form_gt_boxes[t:t+f*f,3] > scale[1]/512.) & \
+        # (center_form_gt_boxes[t:t+f*f,3] < scale[1]/512. * 1.1)
+        s2 = (center_form_gt_boxes[t:t+f*f, 2] < scale[0]/512.) | \
+        (center_form_gt_boxes[t:t+f*f, 2] > scale[1]/512.) 
+
+        s3 = (center_form_gt_boxes[t:t+f*f, 3] < scale[0]/512.) | \
+           (center_form_gt_boxes[t:t+f*f, 3] > scale[1]/512.)
+        labels[t:t+f*f][s2 & s3] = 0 
+        # labels[t:t+f*f][s3==True] = 0
+        #labels[t:t+f*f][s4==True] = 0 
         t += f*f
     
     

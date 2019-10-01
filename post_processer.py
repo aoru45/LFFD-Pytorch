@@ -4,7 +4,7 @@
 @Author: Aoru Xue
 @Date: 2019-09-13 21:06:46
 @LastEditors: Aoru Xue
-@LastEditTime: 2019-09-28 16:52:04
+@LastEditTime: 2019-10-01 09:42:48
 '''
 import torch
 
@@ -13,8 +13,8 @@ from nms import boxes_nms
 
 class PostProcessor:
     def __init__(self,
-                 iou_threshold = 0.3,
-                 score_threshold = 0.8,
+                 iou_threshold = 0.05,
+                 score_threshold = 0.9,
                  image_size = 512,
                  max_per_class=200,
                  max_per_image=-1):
@@ -52,7 +52,7 @@ class PostProcessor:
                 probs = probs[mask]
                 if probs.size(0) == 0:
                     continue
-                boxes = decoded_boxes[mask, :] # center_x,center_y,w,h
+                boxes = decoded_boxes[mask, :] # x1,y1,x2,y2
                 
                 boxes[:, 0] *= width
                 boxes[:, 2] *= width

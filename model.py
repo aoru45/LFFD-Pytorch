@@ -142,7 +142,7 @@ class BasketNet(nn.Module):
         if not self.training:
             if self.priors is None:
                 self.priors = Priors()() # center form
-                #self.priors = self.priors.cuda()
+                self.priors = self.priors.cuda()
             boxes = convert_locations_to_boxes(
                 loc, self.priors, 2
             )# corner_form

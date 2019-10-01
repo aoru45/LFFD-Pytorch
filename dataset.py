@@ -4,7 +4,7 @@
 @Author: Aoru Xue
 @Date: 2019-09-10 12:51:20
 @LastEditors: Aoru Xue
-@LastEditTime: 2019-09-28 16:55:48
+@LastEditTime: 2019-10-01 10:33:38
 '''
 import torch
 import torch.nn as nn
@@ -50,6 +50,7 @@ class BasketDataset(Dataset):
     def _get_annotation(self,idx):
         annotation_file = self.labels[idx]
         objects = ET.parse(annotation_file).findall("object")
+        size = ET.parse(annotation_file).find("size")
         boxes = []
         labels = []
         #is_difficult = []
@@ -61,8 +62,9 @@ class BasketDataset(Dataset):
             y1 = float(bbox.find('ymin').text) - 1
             x2 = float(bbox.find('xmax').text) - 1
             y2 = float(bbox.find('ymax').text) - 1
-            
-            boxes.append([x1/self.imgW,y1/self.imgH,x2/self.imgW,y2/self.imgH])
+            imgW = float(size.find('width').text)
+            imgH = float(size.find('height').text)
+            boxes.append([x1/imgW,y1/imgH,x2/imgW,y2/imgH])
             labels.append(self.class_names.index(class_name))
         return boxes,labels
         #return (torch.tensor(boxes, dtype=torch.float),
@@ -70,25 +72,30 @@ class BasketDataset(Dataset):
     def __len__(self):
         return len(self.img_paths)
 if __name__ == '__main__':
-    datset = BasketDataset("./datasets")
+    import random
+    from augmentor import BasketAug
+    transform = BasketAug(to_tensor = False)
     import cv2 as cv
-    img,gt_loc,gt_labels = datset[0]
+    datset = BasketDataset("./datasets",transform = transform)
+    img,gt_loc,gt_labels = datset[random.choice(range(len(datset)))]
     cv_img = np.array(img)
+    #h,w,_ = cv_img.shape
     cv_img = cv.cvtColor(cv_img,cv.COLOR_RGB2BGR)
     idx = gt_labels > 0
     
-    loc = convert_locations_to_boxes(gt_loc,datset.center_form_priors,0.1,0.2)
+    loc = convert_locations_to_boxes(gt_loc,datset.center_form_priors,2)
     loc = loc[idx]
     label = gt_labels[idx]
+    print(loc.size())
     for i in range(loc.size(0)):
-        print(loc.size())
-        x1,y1,w,h = loc[i,:]
+        
+        x1,y1,x2,y2 = loc[i,:]
         #print(x,y,r)
-        x1 = x1.item() * 512.
-        y1 = y1.item() * 512.
-        w= w.item() * 512.
-        h = h.item() * 512.        
+        x1 = x1.item() * 512
+        y1 = y1.item() * 512
+        x2= x2.item() * 512
+        y2 = y2.item() * 512     
         #cv.circle(cv_img,(int(x),int(y)),int(r),(255,0,0),2)
-        cv.rectangle(cv_img,(int(x1 - w/2),int(y1-h/2)),(int(x1 + w/2),int(y1 + h/2)),(255,0,0),2)
+        cv.rectangle(cv_img,(int(x1),int(y1)),(int(x2),int(y2)),(255,0,0),2)
     cv.imshow("cv",cv_img)
     cv.waitKey(0)

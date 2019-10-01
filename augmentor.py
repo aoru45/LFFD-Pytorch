@@ -4,7 +4,7 @@
 @Author: Aoru Xue
 @Date: 2019-09-17 00:45:53
 @LastEditors: Aoru Xue
-@LastEditTime: 2019-09-28 17:08:10
+@LastEditTime: 2019-10-01 09:58:48
 '''
 import cv2 as cv
 import numpy as np
@@ -13,6 +13,7 @@ from albumentations import (
     
     HorizontalFlip,
     Resize,
+    RandomSizedBBoxSafeCrop,
     Compose,
     RandomSunFlare,
     RandomShadow,
@@ -20,26 +21,27 @@ from albumentations import (
     RandomContrast,
     RandomCrop,
     GaussianBlur,
-    ToTensor
+    ToTensor,
+    CenterCrop
 )
 
 class BasketAug(object):
-    def __init__(self,):
-        self.transform = Compose([
-            RandomCrop(height = 512,width = 512,p=0.5),
+    def __init__(self,to_tensor = True):
+        augs = [
+            RandomSizedBBoxSafeCrop(height = 512,width = 512),
             RandomBrightness(p=0.5),
             RandomContrast(p=0.5),
             
-            RandomSunFlare(p=0.5, flare_roi=(0, 0, 1, 0.5), angle_lower=0.5,src_radius= 150),
+            #RandomSunFlare(p=0.5, flare_roi=(0, 0, 1, 0.5), angle_lower=0.5,src_radius= 150),
             RandomShadow(p=0.5, num_shadows_lower=1, num_shadows_upper=1, 
                         shadow_dimension=5, shadow_roi=(0, 0.5, 1, 1)),
             HorizontalFlip(p=0.5), 
-            
-            
             GaussianBlur(p=0.5),
-            ToTensor(normalize = {"mean":[0.485, 0.456, 0.406],"std":[0.229, 0.224, 0.225]}),
-        ],
-        bbox_params={"format" : "albumentations","min_area": 0,"min_visibility": 0,'label_fields': ['category_id']}
+        ]
+        if to_tensor:
+            augs.append(ToTensor(normalize = {"mean":[0.485, 0.456, 0.406],"std":[0.229, 0.224, 0.225]}))
+        self.transform = Compose(augs,
+            bbox_params={"format" : "albumentations","min_area": 0,"min_visibility": 0.2,'label_fields': ['category_id']}
         )
         
     def __call__(self,cv_img, boxes=None, labels=None):
