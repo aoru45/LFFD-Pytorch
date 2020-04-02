@@ -48,7 +48,7 @@ class BasketAug(object):
         
     def __call__(self,cv_img, boxes=None, labels=None):
         auged = self.transform(image = cv_img,bboxes = boxes, category_id = labels)
-        return auged["image"],auged["bboxes"],auged["category_id"]
+        return ToTensor()(auged["image"]),auged["bboxes"],auged["category_id"]
 if __name__ == "__main__":
     basket_aug = BasketAug()
     img = cv.imread("./a.jpg")
