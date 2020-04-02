@@ -1,6 +1,6 @@
 # BasketNet
 
-This is a demo of the Basketball Competition for RoboCup.
+This is a demo of a LFFD model for a Basketball Recognition Competition.
 
 The demo is based on SSD and LFFD.
 
