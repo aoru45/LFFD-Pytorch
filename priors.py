@@ -4,20 +4,19 @@
 @Author: Aoru Xue
 @Date: 2019-09-10 01:02:36
 @LastEditors: Aoru Xue
-@LastEditTime: 2019-09-13 15:38:11
+@LastEditTime: 2019-10-02 18:36:33
 '''
 from itertools import product
 
 import torch
 from math import sqrt
-
+from config import *
 
 class Priors:
     def __init__(self,clip = True):
-        self.image_size = 512
-        self.strides = [4,4,8,8,16,32,32,32]
-        self.feature_maps = [127,127,63,63,31,15,15,15]
-        self.sizes = [55,71,111,143,223,383,511,639]
+        self.image_size = image_size
+        self.strides = strides
+        self.feature_maps = feature_maps
         self.clip = clip
     def __call__(self):
         priors = []
@@ -30,10 +29,11 @@ class Priors:
 
                 cx = (j + 0.5) / scale
                 cy = (i + 0.5) / scale
+                scale_factor = scale_factors[k] * 0.5 / self.image_size
                 #r = self.sizes[k]
                 #r = r/self.image_size
-                h = w = self.sizes[k] / self.image_size
-                priors.append([cx, cy,w,h])
+                #h = w = self.sizes[k] / self.image_size
+                priors.append([cx, cy, scale_factor])
 
         priors = torch.tensor(priors) #(num_priors,4)
         if self.clip:
