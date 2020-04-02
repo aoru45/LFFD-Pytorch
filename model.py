@@ -4,20 +4,31 @@
 @Author: Aoru Xue
 @Date: 2019-09-09 23:13:46
 @LastEditors: Aoru Xue
-@LastEditTime: 2019-09-28 16:24:56
+@LastEditTime: 2019-10-02 18:39:48
 '''
+
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from priors import Priors
 from basket_utils import *
+class SeparableConv2d(nn.Module):
+    def __init__(self,in_channels,out_channels,kernel_size=3,stride=1,padding=1):
+        super(SeparableConv2d, self).__init__()
+        self.conv = nn.Sequential(
+               nn.Conv2d(in_channels, in_channels, kernel_size = kernel_size, stride=stride, groups=in_channels,padding=padding),
+               nn.Conv2d(in_channels, out_channels, kernel_size = 1, stride=(1, 1))
+       )
+    def forward(self,x):
+        return self.conv(x)
 class ResBlock(nn.Module):
     def __init__(self,channels):
         super(ResBlock, self).__init__()
         self.conv2dRelu = nn.Sequential(
-            nn.Conv2d(channels,channels,kernel_size=3,stride=1,padding=1),
+            SeparableConv2d(channels,channels,kernel_size=3,stride=1,padding=1),
             nn.ReLU6(channels),
-            nn.Conv2d(channels,channels,kernel_size=3,stride=1,padding=1),
+            SeparableConv2d(channels,channels,kernel_size=3,stride=1,padding=1),
             nn.ReLU6(channels)
         )
         self.relu = nn.ReLU6(channels)
@@ -50,11 +61,11 @@ class BasketNet(nn.Module):
         self.num_classes = num_classes 
         self.priors = None
         self.c1 = nn.Sequential(
-            nn.Conv2d(3,64,kernel_size=3,stride=2,padding=0),
+            SeparableConv2d(3,64,kernel_size=3,stride=2,padding=0),
             nn.ReLU6(64)
         )
         self.c2 = nn.Sequential(
-            nn.Conv2d(64,64,kernel_size=3,stride=2,padding=0),
+            SeparableConv2d(64,64,kernel_size=3,stride=2,padding=0),
             nn.ReLU6(64)
         )
         self.tinypart1 = nn.Sequential(
@@ -115,45 +126,43 @@ class BasketNet(nn.Module):
         score3,loc3 = self.lossbranch3(c13)
         score4,loc4 = self.lossbranch4(c15)
         score5,loc5 = self.lossbranch5(c18)
+        #print(loc1.size(),loc2.size(),loc3.size(),loc4.size(),loc5.size())
         score6,loc6 = self.lossbranch6(c21)
         score7,loc7 = self.lossbranch7(c23)
         score8,loc8 = self.lossbranch8(c25)
 
+        cls = torch.cat([score1.permute(0, 2, 3, 1).contiguous().view(score1.size(0),-1, self.num_classes),
+                         score2.permute(0, 2, 3, 1).contiguous().view(score2.size(0),-1,  self.num_classes),
+                         score3.permute(0, 2, 3, 1).contiguous().view(score3.size(0), -1, self.num_classes),
+                         score4.permute(0, 2, 3, 1).contiguous().view(score4.size(0), -1, self.num_classes),
+                         score5.permute(0, 2, 3, 1).contiguous().view(score5.size(0), -1, self.num_classes),
+                         score6.permute(0, 2, 3, 1).contiguous().view(score6.size(0), -1, self.num_classes),
+                         score7.permute(0, 2, 3, 1).contiguous().view(score7.size(0), -1, self.num_classes),
+                         score8.permute(0, 2, 3, 1).contiguous().view(score8.size(0), -1, self.num_classes)], dim=1)
+        loc = torch.cat([loc1.permute(0, 2, 3, 1).contiguous().view(loc1.size(0), -1,4),
+                         loc2.permute(0, 2, 3, 1).contiguous().view(loc1.size(0), -1,4),
+                         loc3.permute(0, 2, 3, 1).contiguous().view(loc1.size(0), -1,4),
+                         loc4.permute(0, 2, 3, 1).contiguous().view(loc1.size(0), -1,4),
+                         loc5.permute(0, 2, 3, 1).contiguous().view(loc1.size(0), -1,4),
+                         loc6.permute(0, 2, 3, 1).contiguous().view(loc1.size(0), -1,4),
+                         loc7.permute(0, 2, 3, 1).contiguous().view(loc1.size(0), -1,4),
+                         loc8.permute(0, 2, 3, 1).contiguous().view(loc1.size(0), -1,4)], dim=1)
+
         if not self.training:
-            pred_score1 = torch.softmax(score1, dim=1)[:, 0, :, :]
-            pred_bbox1 = loc1
-
-            pred_score2 = torch.softmax(score2, dim=1)[:, 0, :, :]
-            pred_bbox2 = loc2
-
-            pred_score3 = torch.softmax(score3, dim=1)[:, 0, :, :]
-            pred_bbox3 = loc3
-
-            pred_score4 = torch.softmax(score4, dim=1)[:, 0, :, :]
-            pred_bbox4 = loc4
-
-            pred_score5 = torch.softmax(score5, dim=1)[:, 0, :, :]
-            pred_bbox5 = loc5
-
-            pred_score6 = torch.softmax(score6, dim=1)[:, 0, :, :]
-            pred_bbox6 = loc6
-
-            pred_score7 = torch.softmax(score7, dim=1)[:, 0, :, :]
-            pred_bbox7 = loc7
-
-            pred_score8 = torch.softmax(score8, dim=1)[:, 0, :, :]
-            pred_bbox8 = loc8
-            return pred_score1, pred_bbox1, pred_score2, pred_bbox2, pred_score3, pred_bbox3, pred_score4, pred_bbox4, pred_score5, pred_bbox5, pred_score6, pred_bbox6, pred_score7, pred_bbox7, pred_score8, pred_bbox8
-
+            if self.priors is None:
+                self.priors = Priors()() # center form
+                #self.priors = self.priors.cuda()
+            boxes = convert_locations_to_boxes(
+                loc, self.priors, 2
+            )# corner_form
+            cls = F.softmax(cls, dim=2)
+            return cls, boxes
         else:
-            return score1, loc1, score2, loc2, score3, loc3, score4, loc4, score5, loc5, score6, loc6, score7, loc7, score8, loc8
+            #print(confidences.size(),locations.size())
+            return (cls,loc) #  (2,1111,3) (2,1111,4)
 
 
-
-# from torchsummary import summary
+from torchsummary import summary
 if __name__ == '__main__':
-    model = BasketNet(num_classes=2).cuda()
-    input = torch.randn([4, 3, 640, 640]).cuda()
-    score1, loc1, score2, loc2, score3, loc3, score4, loc4, score5, loc5, score6, loc6, score7, loc7, score8, loc8 = model(input)
-    print(score1.shape, loc8.shape)
-
+    model = BasketNet()
+    summary(model,(3,640,640),device = "cpu")
