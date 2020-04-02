@@ -4,7 +4,7 @@
 @Author: Aoru Xue
 @Date: 2019-09-17 00:45:53
 @LastEditors: Aoru Xue
-@LastEditTime: 2019-10-01 09:58:48
+@LastEditTime: 2019-10-02 18:30:47
 '''
 import cv2 as cv
 import numpy as np
@@ -21,14 +21,18 @@ from albumentations import (
     RandomContrast,
     RandomCrop,
     GaussianBlur,
-    ToTensor,
-    CenterCrop
+    CenterCrop,
+    SmallestMaxSize,
+    PadIfNeeded,
+    LongestMaxSize
 )
-
+from torchvision.transforms import ToTensor
 class BasketAug(object):
     def __init__(self,to_tensor = True):
         augs = [
-            RandomSizedBBoxSafeCrop(height = 512,width = 512),
+            LongestMaxSize(640),
+            PadIfNeeded(640,640,cv.BORDER_CONSTANT,value = 0),
+            #RandomSizedBBoxSafeCrop(height = 300,width = 300),
             RandomBrightness(p=0.5),
             RandomContrast(p=0.5),
             
@@ -38,15 +42,12 @@ class BasketAug(object):
             HorizontalFlip(p=0.5), 
             GaussianBlur(p=0.5),
         ]
-        if to_tensor:
-            augs.append(ToTensor(normalize = {"mean":[0.485, 0.456, 0.406],"std":[0.229, 0.224, 0.225]}))
         self.transform = Compose(augs,
             bbox_params={"format" : "albumentations","min_area": 0,"min_visibility": 0.2,'label_fields': ['category_id']}
         )
         
     def __call__(self,cv_img, boxes=None, labels=None):
         auged = self.transform(image = cv_img,bboxes = boxes, category_id = labels)
-        
         return auged["image"],auged["bboxes"],auged["category_id"]
 if __name__ == "__main__":
     basket_aug = BasketAug()
@@ -57,11 +58,10 @@ if __name__ == "__main__":
     
     for box in boxes:
         xmin,ymin,xmax,ymax = box
-        xmin*=512
-        ymin*=512
-        xmax*=512
-        ymax*=512
+        xmin*=640
+        ymin*=640
+        xmax*=640
+        ymax*=640
         cv.rectangle(img,(int(xmin),int(ymin)),(int(xmax),int(ymax)),(255,0,0),2)
     cv.imshow("img",img)
     cv.waitKey(0)
-
