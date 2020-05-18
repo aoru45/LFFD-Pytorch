@@ -48,6 +48,7 @@ def in_center(priors,gt):
     # 1,n,4    m,1,4
     s1 = (priors[...,0] > gt[...,0]) & (priors[...,1] > gt[...,1]) & (priors[...,0] < gt[...,2]) & (priors[...,1] < gt[...,3]) 
     return s1
+'''
 def assign_priors(gt_boxes, gt_labels, priors,
                   iou_threshold):
     
@@ -81,7 +82,43 @@ def assign_priors(gt_boxes, gt_labels, priors,
 
         t += f*f
     return boxes, labels, not_ignored
+'''
+def assign_priors(gt_boxes, gt_labels, priors,
+                  iou_threshold):
+    
+    #print(gt_boxes,corner_form_priors)
+    # size: num_priors x num_targets
+    # prior 包含 gt
+    s1 = in_center(priors.unsqueeze(1),gt_boxes.unsqueeze(0)) # 直接匹配在中间的
+    corner_form_priors = center_form_to_corner_form(priors)
+    ious = iou_of(corner_form_priors.unsqueeze(1),gt_boxes.unsqueeze(0))
+    #s1[torch.sum(s1,dim = 1) > 1] = False # 同时有多个匹配的
+    not_ignored = torch.ones(s1.size(0),dtype = torch.uint8)
+    not_ignored[torch.sum(s1,dim = 1) > 1] = 0
+    best_target_per_prior, best_target_per_prior_index = (ious*s1).max(1)
+    best_prior_per_target, best_prior_per_target_index = ious.max(0)
+    for target_index, prior_index in enumerate(best_prior_per_target_index):
+        best_target_per_prior_index[prior_index] = target_index
+    best_target_per_prior.index_fill_(0, best_prior_per_target_index, 2)
+    labels = gt_labels[best_target_per_prior_index] # (num_priors,1)
+    labels[best_target_per_prior < iou_threshold] = 0  # the backgournd id,没有匹配的给背景
+    
+    boxes = gt_boxes[best_target_per_prior_index] #num_priors，４
+    t = 0 
+    center_form_gt_boxes = corner_form_to_center_form(boxes)
+    for f,scale in zip(feature_maps,scales):
+        d = torch.min(center_form_gt_boxes[t:t+f*f, 2],center_form_gt_boxes[t:t+f*f, 3])
+        #condition = (d < scale[0]/image_size) | (d > scale[1]/image_size) 
+        #labels[t:t+f*f][condition] = 0 
+        
+        left_gray_scale = [0.9 *scale[0], scale[0]]
+        right_gray_scale = [scale[1], 1.1 * scale[1]]
+        
+        not_ignored[t:t+f*f][(d > left_gray_scale[0]) & (d < left_gray_scale[1])] = 0
+        not_ignored[t:t+f*f][(d > right_gray_scale[0]) & (d < right_gray_scale[1])] = 0
 
+        t += f*f
+    return boxes, labels, not_ignored
 
 def hard_negative_mining(loss, labels, neg_pos_ratio):
     pos_mask = labels > 0
