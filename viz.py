@@ -4,7 +4,7 @@
 @Author: Aoru Xue
 @Date: 2019-09-13 21:06:56
 @LastEditors: Aoru Xue
-@LastEditTime: 2019-10-01 09:54:21
+@LastEditTime: 2019-10-02 17:00:40
 '''
 import numpy as np
 from six.moves import range
@@ -62,6 +62,58 @@ def _draw_single_box(image, xmin, ymin, xmax, ymax, color='black', display_str=N
                  fill='black',
                  font=font)
 
+    return image
+
+def _draw_single_circle(image, xmin, ymin, xmax, ymax, color='black', display_str=None, font=None, thickness=2):
+    draw = ImageDraw.Draw(image)
+    left, right, top, bottom = xmin, xmax, ymin, ymax
+    draw.ellipse([(left, top), (right, bottom)], width=thickness)
+    if display_str is not None:
+        text_bottom = bottom
+        text_width, text_height = font.getsize(display_str)
+        margin = np.ceil(0.05 * text_height)
+        draw.text((left + margin, text_bottom - text_height - margin),
+                display_str,
+                fill='black',
+                font=font)
+    #    text_bottom = bottom
+        # Reverse list and print from bottom to top.
+    #    text_width, text_height = font.getsize(display_str)
+    #    margin = np.ceil(0.05 * text_height)
+        #draw.rectangle(
+        #  [(left, text_bottom - text_height - 2 * margin), (left + text_width, text_bottom)], fill=color)
+        #draw.text((left + margin, text_bottom - text_height - margin),
+        #         display_str,
+        #         fill='black',
+        #         font=font)
+
+    return image
+def draw_circles(image, circles, labels=None, probs=None, class_name_map=None):
+    num_circles = circles.shape[0]
+    gt_boxes_new = circles.copy()
+    draw_image = Image.fromarray(np.uint8(image))
+    for i in range(num_circles):
+        display_str = None
+        this_class = 0
+        if labels is not None:
+            this_class = labels[i]
+            class_name = class_name_map[this_class] if class_name_map is not None else str(this_class)
+            class_name = class_name.decode('utf-8') if isinstance(class_name, bytes) else class_name
+            if probs is not None:
+                prob = probs[i]
+                display_str = '{}:{:.2f}'.format(class_name, prob)
+            else:
+                display_str = class_name
+        draw_image = _draw_single_circle(image=draw_image,
+                                      xmin=gt_boxes_new[i, 0] - gt_boxes_new[i, 2],
+                                      ymin=gt_boxes_new[i, 1] - gt_boxes_new[i, 2],
+                                      xmax=gt_boxes_new[i, 0] + gt_boxes_new[i, 2],
+                                      ymax=gt_boxes_new[i, 1] + gt_boxes_new[i, 2],
+                                      color=STANDARD_COLORS[this_class % NUM_COLORS],
+                                      display_str=display_str,
+                                      font=FONT)
+
+    image = np.array(draw_image, dtype=np.float32)
     return image
 
 
