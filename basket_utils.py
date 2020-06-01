@@ -95,7 +95,7 @@ def assign_priors(gt_boxes, gt_labels, priors,
     #s1[torch.sum(s1,dim = 1) > 1] = False # 同时有多个匹配的
     not_ignored = torch.ones(s1.size(0),dtype = torch.uint8)
     not_ignored[torch.sum(s1,dim = 1) > 1] = 0
-    best_target_per_prior, best_target_per_prior_index = (ious*s1).max(1)
+    best_target_per_prior, best_target_per_prior_index = (ious*s1.float()).max(1)
     best_prior_per_target, best_prior_per_target_index = ious.max(0)
     for target_index, prior_index in enumerate(best_prior_per_target_index):
         best_target_per_prior_index[prior_index] = target_index
